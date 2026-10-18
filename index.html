@@ -52,6 +52,10 @@ h1 .beta{position:absolute;right:0;bottom:calc(100% - .55em);z-index:1;font-fami
 .viewer{position:relative;z-index:1;width:100%;max-width:100%;height:0;padding-top:100%;flex:none;background:var(--viewer);overflow:hidden}
 .viewer img{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;user-select:none;-webkit-user-drag:none}
 .viewer.pix img{image-rendering:pixelated}
+/* Last round: the frame behind the cover pulses a soft red, like a heartbeat */
+.viewer.last{animation:heartbeat 1.6s ease-in-out infinite}
+@keyframes heartbeat{0%,40%,100%{background-color:var(--viewer)}12%{background-color:#6e2a36}20%{background-color:#4a2c38}28%{background-color:#5e2a35}}
+@media (prefers-reduced-motion:reduce){.viewer.last{animation:none;background-color:#4a2c38}}
 .viewer .loading{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--pixel);color:var(--muted);font-size:16px}
 .clues{position:absolute;left:16px;right:16px;bottom:16px;display:flex;flex-wrap:wrap;gap:2px}
 .chip{font-family:var(--pixel);font-size:14px;line-height:1;padding:6px 10px;min-width:72px;max-width:100%;line-height:1.2;box-sizing:border-box;text-align:center;background:var(--chip);color:var(--chipInk);letter-spacing:.06em}
@@ -100,13 +104,9 @@ button:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
 footer{margin-top:auto;padding-block:24px;font-family:var(--pixel);font-size:12px;color:var(--muted);letter-spacing:.03em;line-height:1.5}
 footer a{color:inherit}
 footer p{margin:0}
-footer .more{font-size:14px;color:var(--fg)}
-/* Small Meta Critical wordmark, built like the header: META in Jersey 25, CRITICAL in Press Start 2P with the stepped trail */
-footer .mc{display:inline-flex;align-items:baseline;margin:6px 0 22px;color:var(--fg);text-decoration:none;line-height:1;white-space:nowrap}
-footer .mc .m{font-family:"Jersey 25","Tiny5",ui-monospace,monospace;font-size:34px;letter-spacing:.02em}
-footer .mc .c{position:relative;font-family:"Press Start 2P",ui-monospace,monospace;font-size:15px;margin-left:.2em;
-  text-shadow:1px 1px 0 #8a7440,2px 2px 0 #8a7440,3px 3px 0 #6a6a30,4px 4px 0 #6a6a30,5px 5px 0 #3f6a40,6px 6px 0 #3f6a40,7px 7px 0 #2f5a6e,8px 8px 0 #2f5a6e,9px 9px 0 #3c3c78,10px 10px 0 #3c3c78,11px 11px 0 #5a3070,12px 12px 0 #5a3070}
-footer .mc:hover .c,footer .mc:focus-visible .c{color:var(--green)}
+footer .more{margin-bottom:14px;font-family:var(--button);font-size:10px;line-height:1.8;color:var(--fg);letter-spacing:0}
+footer .more a{color:var(--green);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}
+footer .more a:hover,footer .more a:focus-visible{color:var(--fg)}
 </style>
 </head>
 <body>
@@ -138,7 +138,7 @@ footer .mc:hover .c,footer .mc:focus-visible .c{color:var(--green)}
 
   <canvas id="confetti" hidden></canvas>
   <div class="flash" id="flash" aria-hidden="true"></div>
-  <footer class="gut"><p class="more">Wanna play another game? Check out</p><a class="mc" id="mcLink" href="https://bobwulff.github.io/MetaCritical/" target="_blank" rel="noopener" aria-label="Meta Critical"><span class="m">META</span><span class="c" id="mcCrit">CRITICAL</span></a><p>Box art pulled from <a href="https://opencritic.com/" target="_blank" rel="noopener">OpenCritic</a> and <a href="https://github.com/libretro-thumbnails/libretro-thumbnails" target="_blank" rel="noopener">libretro</a>. Platform data from <a href="https://rawg.io/" target="_blank" rel="noopener">RAWG</a>. Designed by Bob Wulff, coded by Claude.</p></footer>
+  <footer class="gut"><p class="more">Wanna play another game? Check out <a href="https://bobwulff.github.io/MetaCritical/" target="_blank" rel="noopener">METACRITICAL</a></p><p>Box art pulled from <a href="https://opencritic.com/" target="_blank" rel="noopener">OpenCritic</a> and <a href="https://github.com/libretro-thumbnails/libretro-thumbnails" target="_blank" rel="noopener">libretro</a>. Platform data from <a href="https://rawg.io/" target="_blank" rel="noopener">RAWG</a>. Designed by Bob Wulff, coded by Claude.</p></footer>
 </div>
 
 <script>
@@ -208,6 +208,7 @@ function render(){
   if(round>=1||done) add(String(game.y));
   if(round>=2||done){ add(game.c); if(game.p) add(cleanPub(game.p)); }
 
+  $('viewer').classList.toggle('last', round===4 && !done);
   $('fill').style.width=(deaths/5*100)+'%';
   $('fill').innerHTML = deaths ? `<span>${deaths} DEATH${deaths===1?'':'S'}</span>` : '';
   $('zero').hidden = deaths>0;
@@ -386,13 +387,6 @@ function fitTitle(){
       z.style.top=((B.d*boxEm - Z.d*boxEm*ratio)/(boxEm*ratio))+'em'; // line up the bottoms
     }
   }catch(e){}
-  try{
-    const cx=document.createElement('canvas').getContext('2d');
-    const m=(font,txt)=>{cx.font='100px '+font; const r=cx.measureText(txt); return {a:r.actualBoundingBoxAscent/100, d:r.actualBoundingBoxDescent/100};};
-    const B=m('"Jersey 25"','META'), Z=m('"Press Start 2P"','CRITICAL');
-    if(B.a+B.d>0 && Z.a+Z.d>0){ const big=34, small=big*(B.a+B.d)/(Z.a+Z.d), c=$('mcCrit');
-      c.style.fontSize=small+'px'; c.style.top=(B.d*big - Z.d*small)+'px'; }
-  }catch(e){}
   h.style.fontSize='40px'; const fs=40*avail/h.scrollWidth; h.style.fontSize=fs+'px';
   // Muted rainbow trail behind ZOOM: steps down-right until it slides under the art window.
   const cols=['#8a7440','#6a6a30','#3f6a40','#2f5a6e','#3c3c78','#5a3070','#6e2f48','#6a3a2a'];
@@ -442,13 +436,16 @@ fetch(SHEET_CSV,{cache:'no-store'})
     const rows=parseCSV(text), head=(rows.shift()||[]).map(x=>x.trim().toLowerCase()), col=n=>head.indexOf(n);
     if(col('opencritic_id')<0 || col('game')<0) throw new Error('Sheet is missing columns');
     const get=(r,n)=>{ const i=col(n); return i<0 ? '' : String(r[i]||'').trim(); };
-    const byId=new Map(GAMES.map(g=>[g.id,g])); let n=0;
+    const byId=new Map(GAMES.map(g=>[g.id,g])), off=new Set(); let n=0;
     for(const r of rows){ const g=byId.get(parseInt(get(r,'opencritic_id'),10)); if(!g) continue;
       const t=get(r,'game'), y=parseInt(get(r,'year_clue')||get(r,'year'),10), c=get(r,'platform_clue')||get(r,'platforms'), p=get(r,'publisher'), b=get(r,'box_art_url');
-      if(t) g.t=t; if(y) g.y=y; if(c) g.c=c; if(p) g.p=p; if(b) g.b=b; n++; }
+      if(t) g.t=t; if(y) g.y=y; if(c) g.c=c; if(p) g.p=p; if(b) g.b=b; n++;
+      if(/^\s*no\s*$/i.test(get(r,'in zoom'))) off.add(g.id); }               // "in ZOOM" column: "no" leaves the game out (blank or "yes" keeps it)
     if(!n) throw new Error('No matching games in the Sheet');
     titles=[...new Set([...GAMES.map(g=>g.t), ...DECOYS])].sort((a,b)=>a.localeCompare(b));
-    if(game && !done) render();
+    if(off.size){ GAMES=GAMES.filter(g=>!off.has(g.id)); bag=[]; }
+    if(game && off.has(game.id) && !done) newGame();
+    else if(game && !done) render();
   })
   .catch(err=>console.warn('Using the built-in game list:', err.message));
 
